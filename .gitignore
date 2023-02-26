@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+db_creds.yaml
+local_db_creds.yaml
+api_creds.yaml
