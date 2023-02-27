@@ -126,6 +126,9 @@ ADD CONSTRAINT FK_orders_table_date_uuid
 FOREIGN KEY (date_uuid)
 REFERENCES dim_date_times(date_uuid);
 
+INSERT INTO dim_store_details (store_code, staff_numbers, opening_date, store_type)
+VALUES ('WEB-1388012W', 325, '2010-06-12', 'Web Portal');
+
 DELETE FROM orders_table
 WHERE store_code NOT IN (SELECT store_code FROM dim_store_details);
 
@@ -133,9 +136,6 @@ ALTER TABLE orders_table
 ADD CONSTRAINT FK_orders_table_store_code
 FOREIGN KEY (store_code)
 REFERENCES dim_store_details(store_code);
-
-INSERT INTO dim_store_details (store_code, staff_numbers, opening_date, store_type)
-VALUES ('WEB-1388012W', 325, '2010-06-12', 'Web Portal');
 
 DELETE FROM orders_table
 WHERE product_code NOT IN (SELECT product_code FROM dim_products);
