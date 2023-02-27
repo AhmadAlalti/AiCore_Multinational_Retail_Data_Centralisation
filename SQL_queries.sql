@@ -113,6 +113,8 @@ ADD CONSTRAINT PK_dim_users_user_uuid PRIMARY KEY (user_uuid);
 
 
 -- Make foreign keys
+INSERT INTO dim_store_details (store_code, staff_numbers, opening_date, country_code)
+VALUES ('WEB-1388012W', 325, '2010-06-12', 'WEB');
 
 ALTER TABLE orders_table
 ADD CONSTRAINT FK_orders_table_card_number
@@ -173,6 +175,7 @@ GROUP BY dim_date_times.month
 ORDER BY total_sales DESC;
 
 -- How many sales are coming from online?
+
 SELECT COUNT(*) as number_of_sales, SUM(product_quantity) as product_quantity_count,
 CASE 
     WHEN store_code LIKE 'WEB%' THEN 'Web'
