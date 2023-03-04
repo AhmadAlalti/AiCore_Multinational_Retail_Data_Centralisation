@@ -4,15 +4,63 @@ import numpy as np
 
 class DataCleaner:
     
+    def replace_and_drop_null(self, df):
+        
+        '''It takes a dataframe as an argument, replaces the string 'NULL' with a null value, and then drops
+        all rows with null values.
+        
+        Parameters
+        ----------
+        df
+            the dataframe to be cleaned
+        
+        Returns
+        -------
+            The dataframe with the null values replaced with NaN and then dropped.
+        '''
+        
+        df.replace('NULL', np.nan, inplace=True)
+        df.dropna(inplace=True)
+        
+        return df
+    
+    
+    
+    def drop_rows_containing_mask(self, df, column, exp):
+        
+        '''It takes a dataframe, a column name, and a regular expression, and returns a dataframe with the rows
+        containing the regular expression dropped
+        
+        Parameters
+        ----------
+        df
+            the dataframe you want to clean
+        column
+            the column name of the column you want to search
+        exp
+            the regular expression to search for
+        
+        Returns
+        -------
+            A dataframe with the rows containing the mask dropped. 
+        '''
+        
+        mask = df[column].str.contains(exp)
+        rows_to_drop = mask.index[mask].tolist()    
+        df.drop(rows_to_drop, inplace=True)
+        
+        return df
+    
+    
+    
     def clean_user_data(self, user_df):
         
-        '''It takes a dataframe as input, replaces all the NULL values with NaN, drops all the NaN values,
-        drops all the rows where the first name contains a number, converts the date of birth column to
-        datetime, replaces all the @@ in the email address column with @, replaces all the GG in the country
-        code column with G, converts the country code column to a category, replaces all the phone numbers
-        with the correct format, drops all the rows where the phone number contains a letter, converts the
-        join date column to datetime, replaces all the phone numbers with the correct country code, and
-        returns the cleaned dataframe.
+        '''It replaces null values with the string 'unknown', drops rows containing digits in the first name
+        column, converts the date of birth column to datetime, replaces '@@' with '@' in the email address
+        column, replaces 'GG' with 'G' in the country code column, converts the country code column to a
+        category, replaces certain characters in the phone number column, drops rows containing letters in
+        the phone number column, converts the join date column to datetime, and replaces the country code in
+        the phone number column with the appropriate country code
         
         Parameters
         ----------
@@ -23,21 +71,16 @@ class DataCleaner:
         -------
             A dataframe with cleaned data.
         '''
-        
-        user_df.replace('NULL', np.nan, inplace=True)
-        user_df.dropna(inplace=True)
-        mask = user_df["first_name"].str.contains('\d+')
-        rows_to_drop = mask.index[mask].tolist()    
-        user_df.drop(rows_to_drop, inplace=True)
+
+        user_df = self.replace_and_drop_null(user_df)
+        user_df = self.drop_rows_containing_mask(user_df, "first_name", "\d+")
         user_df['date_of_birth'] = pd.to_datetime(user_df['date_of_birth'])
         user_df['email_address'] = user_df['email_address'].str.replace('@@', '@')
         user_df['country_code'] = user_df['country_code'].str.replace('GG', 'G')
         user_df['country_code'] = user_df['country_code'].astype('category')
         replacements = {'\(0\)': '', '[\)\(\.\- ]' : '', '^\+': '00'}
         user_df['phone_number'] = user_df['phone_number'].replace(replacements, regex=True)
-        mask2 = user_df['phone_number'].str.contains('[a-zA-Z]')
-        rows_to_drop2 = mask2.index[mask2].tolist()
-        user_df.drop(rows_to_drop2, inplace=True)
+        user_df = self.drop_rows_containing_mask(user_df, "phone_number", "[a-zA-Z]")
         user_df['join_date'] = pd.to_datetime(user_df['join_date'])
         user_df['phone_number'] = user_df['phone_number'].str.replace('^00\d{2}', '', regex=True)
         code_dict = {'GB': '0044', 'US': '001', 'DE': '0049'}
@@ -50,22 +93,22 @@ class DataCleaner:
     
     def clean_card_data(self, card_df):
         
-        '''It takes a dataframe of credit card data, replaces all instances of 'NULL' with NaN, drops all rows
-        with NaN, removes all non-digit characters from the card number column, removes all rows with
-        non-digit characters in the card number column, converts the date_payment_confirmed column to
-        datetime, converts the card_number column to int, and converts the card_provider column to category
+        '''It takes a dataframe of credit card data, replaces null values with 'Unknown', drops null values,
+        removes leading question marks from card numbers, removes non-numeric card numbers, converts the
+        date column to a datetime object, converts the card number column to an integer, and converts the
+        card provider column to a category
         
         Parameters
         ----------
         card_df
-            the dataframe containing the card data
+            the dataframe of card data
         
         Returns
         -------
             A dataframe with the cleaned data.
         '''
-        
-        card_df.replace('NULL', np.nan, inplace=True)
+
+        card_df = self.replace_and_drop_null(card_df)
         card_df.dropna(inplace=True)
         card_df['card_number'] = card_df['card_number'].apply(lambda x: re.sub(r'^\?+', '', x) if isinstance(x, str) else x)
         card_df = card_df[card_df['card_number'].apply(lambda x: str(x).isdigit())]
@@ -98,11 +141,8 @@ class DataCleaner:
         '''
         
         store_df.drop('lat', axis=1, inplace=True)
-        store_df.replace('NULL', np.nan, inplace=True)
-        store_df.dropna(inplace=True)
-        mask = store_df['staff_numbers'].str.contains('[a-zA-Z]')
-        rows_to_drop = mask.index[mask].tolist()
-        store_df.drop(rows_to_drop, inplace=True)
+        store_df = self.replace_and_drop_null(store_df)
+        store_df = self.drop_rows_containing_mask(store_df, "staff_numbers", "[a-zA-Z]")
         store_df['continent'] = store_df['continent'].str.replace('ee', '')
         store_df['opening_date'] = pd.to_datetime(store_df['opening_date'])
         column_to_move = store_df.pop('latitude')
@@ -172,11 +212,8 @@ class DataCleaner:
             A dataframe with the cleaned products data.
         '''
         
-        product_df.replace('NULL', np.nan, inplace=True)
-        product_df.dropna(inplace=True)
-        mask = product_df['product_price'].str.contains('[a-zA-Z]')
-        rows_to_drop = mask.index[mask].tolist()
-        product_df.drop(rows_to_drop, inplace=True)
+        product_df = self.replace_and_drop_null(product_df)
+        product_df = self.drop_rows_containing_mask(product_df, "product_price", "[a-zA-Z]")
         product_df = product_df[product_df['EAN'].str.len() <= 13]
         product_df['date_added'] = pd.to_datetime(product_df['date_added'])
         product_df['weight'] = product_df['weight'].apply(self.convert_product_weights)
@@ -214,9 +251,23 @@ class DataCleaner:
     
     
     def clean_date_times_data(self, date_times_df):
-        date_times_df.replace('NULL', np.nan, inplace=True)
-        date_times_df.dropna(inplace=True)        
-        mask = date_times_df['month'].str.contains('[a-zA-Z]')
-        rows_to_drop = mask.index[mask].tolist()
-        date_times_df.drop(rows_to_drop, inplace=True)
+        
+        '''This function takes in a dataframe and returns a dataframe with the following changes:
+        
+        1. Replaces null values with the string "unknown"
+        2. Drops rows containing the string "month"
+        
+        Parameters
+        ----------
+        date_times_df
+            the dataframe containing the date and time columns
+        
+        Returns
+        -------
+            A dataframe with the cleaned data.
+        '''
+        
+        date_times_df = self.replace_and_drop_null(date_times_df)
+        date_times_df = self.drop_rows_containing_mask(date_times_df, "month", "[a-zA-Z]")  
+        
         return date_times_df            
